@@ -16,8 +16,20 @@ export class PacketReader {
     return x;
   }
 
+  readUnsignedByte() {
+    const x = this.view.getUint8(this.pos);
+    this.pos += 1;
+    return x;
+  }
+
   readShort() {
     const x = this.view.getInt16(this.pos);
+    this.pos += 2;
+    return x;
+  }
+
+  readUnsignedShort() {
+    const x = this.view.getUint16(this.pos);
     this.pos += 2;
     return x;
   }
@@ -28,8 +40,20 @@ export class PacketReader {
     return x;
   }
 
+  readUnsignedInt() {
+    const x = this.view.getUint32(this.pos);
+    this.pos += 4;
+    return x;
+  }
+
   readLong() {
     const x = this.view.getBigInt64(this.pos);
+    this.pos += 8;
+    return x;
+  }
+
+  readUnsignedLong() {
+    const x = this.view.getBigUint64(this.pos);
     this.pos += 8;
     return x;
   }
@@ -44,6 +68,10 @@ export class PacketReader {
     const value = this.view.getFloat64(this.pos);
     this.pos += 8;
     return value;
+  }
+
+  readBoolean() {
+    return Boolean(this.readByte());
   }
 
   readVarInt() {
@@ -61,7 +89,7 @@ export class PacketReader {
     do {
       b = this.readByte();
       x |= BigInt(b & 0x7f) << (7n * n);
-      if (++n > 10n) throw new Error("VarInt is too big");
+      if (++n > 10n) throw new Error("VarLong is too big");
     } while ((b & 0x80) != 0);
     return BigInt.asIntN(64, x);
   }
@@ -91,11 +119,7 @@ export class PacketWriter {
 
   constructor(capacity = 64) {
     this.buf = new Uint8Array(capacity);
-    this.view = new DataView(
-      this.buf.buffer,
-      this.buf.byteOffset,
-      this.buf.byteLength,
-    );
+    this.view = new DataView(this.buf.buffer);
   }
 
   bytes() {
@@ -109,16 +133,18 @@ export class PacketWriter {
     const buf = this.buf;
     this.buf = new Uint8Array(capacity * 2 + n);
     this.buf.set(buf);
-    this.view = new DataView(
-      this.buf.buffer,
-      this.buf.byteOffset,
-      this.buf.byteLength,
-    );
+    this.view = new DataView(this.buf.buffer);
   }
 
   writeByte(x: number) {
     this.grow(1);
     this.view.setInt8(this.pos, x);
+    return (this.pos += 1, this);
+  }
+
+  writeUnsignedByte(x: number) {
+    this.grow(1);
+    this.view.setUint8(this.pos, x);
     return (this.pos += 1, this);
   }
 
@@ -128,15 +154,33 @@ export class PacketWriter {
     return (this.pos += 2, this);
   }
 
+  writeUnsignedShort(x: number) {
+    this.grow(2);
+    this.view.setUint16(this.pos, x);
+    return (this.pos += 2, this);
+  }
+
   writeInt(x: number) {
     this.grow(4);
     this.view.setInt32(this.pos, x);
     return (this.pos += 4, this);
   }
 
+  writeUnsignedInt(x: number) {
+    this.grow(4);
+    this.view.setUint32(this.pos, x);
+    return (this.pos += 4, this);
+  }
+
   writeLong(x: bigint) {
     this.grow(8);
     this.view.setBigInt64(this.pos, x);
+    return (this.pos += 8, this);
+  }
+
+  writeUnsignedLong(x: bigint) {
+    this.grow(8);
+    this.view.setBigUint64(this.pos, x);
     return (this.pos += 8, this);
   }
 
@@ -150,6 +194,10 @@ export class PacketWriter {
     this.grow(8);
     this.view.setFloat64(this.pos, x);
     return (this.pos += 8, this);
+  }
+
+  writeBoolean(x: boolean) {
+    return this.writeByte(Number(x));
   }
 
   writeVarInt(x: number) {
@@ -180,14 +228,14 @@ export class PacketWriter {
     return this;
   }
 
-  writeString(string: string) {
-    const buf = textEncoder.encode(string);
+  writeString(x: string) {
+    const buf = textEncoder.encode(x);
     this.writeVarInt(buf.byteLength);
     this.write(buf);
     return this;
   }
 
-  writeJSON<T>(value: T) {
-    return this.writeString(JSON.stringify(value));
+  writeJSON<T>(x: T) {
+    return this.writeString(JSON.stringify(x));
   }
 }

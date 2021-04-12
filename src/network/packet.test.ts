@@ -4,6 +4,7 @@ import {
 } from "https://deno.land/std/testing/asserts.ts";
 
 import { PacketReader, PacketWriter } from "./packet.ts";
+import { CompoundTag } from "../nbt/tag.ts";
 
 Deno.test("write grow", () => {
   const writer = new PacketWriter(0);
@@ -88,4 +89,18 @@ Deno.test("read varlong too long", () => {
   assertThrows(() =>
     new PacketReader(new Uint8Array(10).fill(255)).readVarLong()
   );
+});
+
+Deno.test("nbt", () => {
+  const tag = new CompoundTag().setString("hello", "world");
+
+  const buf = new PacketWriter()
+    .writeNBT(tag)
+    .writeByte(-1)
+    .bytes();
+
+  const reader = new PacketReader(buf);
+
+  assertEquals(reader.readNBT(), tag);
+  assertEquals(reader.readByte(), -1);
 });

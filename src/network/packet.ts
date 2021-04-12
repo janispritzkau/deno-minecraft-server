@@ -1,3 +1,7 @@
+import { CompoundTag } from "../nbt/tag.ts";
+import { NBTReader } from "../nbt/reader.ts";
+import { NBTWriter } from "../nbt/writer.ts";
+
 const textDecoder = new TextDecoder();
 
 export class PacketReader {
@@ -107,6 +111,13 @@ export class PacketReader {
 
   readJSON(maxLen?: number) {
     return JSON.parse(this.readString(maxLen));
+  }
+
+  readNBT() {
+    const reader = new NBTReader(this.buf.subarray(this.pos));
+    const tag = reader.readCompoundTag();
+    this.pos += reader.pos;
+    return tag;
   }
 }
 
@@ -237,5 +248,14 @@ export class PacketWriter {
 
   writeJSON<T>(x: T) {
     return this.writeString(JSON.stringify(x));
+  }
+
+  writeNBT(tag: CompoundTag) {
+    const writer = new NBTWriter(this.buf);
+    writer.writeCompoundTag(tag);
+    this.buf = writer.buf;
+    this.view = writer.view;
+    this.pos = writer.pos;
+    return this;
   }
 }

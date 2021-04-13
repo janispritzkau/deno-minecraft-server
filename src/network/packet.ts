@@ -260,7 +260,7 @@ export class PacketWriter {
   }
 
   writeNBT(tag: CompoundTag) {
-    const writer = new NBTWriter(this.buf);
+    const writer = new NBTWriter(this.buf, this.pos);
     writer.writeCompoundTag(tag);
     this.buf = writer.buf;
     this.view = writer.view;

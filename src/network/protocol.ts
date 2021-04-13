@@ -5,9 +5,21 @@ import {
   PacketWriter,
 } from "./packet.ts";
 
+export interface PacketHandler {
+  handleDisconnect(): void;
+}
+
+export class UnregisteredPacket implements Packet<void> {
+  constructor(public id: number, public buf: Uint8Array) {}
+  write() {}
+  handle() {}
+}
+
 export class Protocol<PacketHandler> {
   private idToConstructor = new Map<number, PacketConstructor>();
   private constructorToId = new Map<PacketConstructor, number>();
+
+  constructor(private ignoreUnregisteredPackets = false) {}
 
   registerServerbound(id: number, constructor: PacketConstructor) {
     this.idToConstructor.set(id, constructor);
@@ -23,6 +35,10 @@ export class Protocol<PacketHandler> {
     const constructor = this.idToConstructor.get(id);
 
     if (!constructor) {
+      if (this.ignoreUnregisteredPackets) {
+        return new UnregisteredPacket(id, buf);
+      }
+
       throw new Error(`Invalid packet id ${id}`);
     }
 

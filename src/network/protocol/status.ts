@@ -1,9 +1,11 @@
 import { Packet, PacketReader, PacketWriter } from "../packet.ts";
-import { Protocol } from "../protocol.ts";
+import { PacketHandler, Protocol } from "../protocol.ts";
 import { Connection } from "../connection.ts";
+import { Server } from "../../server.ts";
+import { ServerStatus } from "../../server/status.ts";
 
-export class ServerStatusHandler {
-  constructor(private conn: Connection) {}
+export class ServerStatusHandler implements PacketHandler {
+  constructor(private server: Server, private conn: Connection) {}
 
   handleRequest() {
     this.conn.sendPacket(
@@ -13,7 +15,7 @@ export class ServerStatusHandler {
           name: "1.16.5",
           protocol: 754,
         },
-        players: { online: 0, max: 0 },
+        players: { online: this.server.players.size, max: 0 },
       }),
     );
   }
@@ -21,6 +23,8 @@ export class ServerStatusHandler {
   handlePing(ping: ServerStatusPingPacket) {
     this.conn.sendPacket(new ClientStatusPongPacket(ping.id));
   }
+
+  handleDisconnect() {}
 }
 
 export class ClientStatusResponsePacket implements Packet<ServerStatusHandler> {
@@ -28,7 +32,7 @@ export class ClientStatusResponsePacket implements Packet<ServerStatusHandler> {
     return new this(reader.readJSON());
   }
 
-  constructor(public status: any) {}
+  constructor(public status: ServerStatus) {}
 
   write(writer: PacketWriter) {
     writer.writeJSON(this.status);
@@ -80,7 +84,7 @@ export class ServerStatusPingPacket implements Packet<ServerStatusHandler> {
 }
 
 export const statusProtocol = new Protocol<ServerStatusHandler>();
-statusProtocol.registerServerbound(0, ServerStatusRequestPacket);
-statusProtocol.registerServerbound(1, ServerStatusPingPacket);
-statusProtocol.registerClientbound(0, ClientStatusResponsePacket);
-statusProtocol.registerClientbound(1, ClientStatusPongPacket);
+statusProtocol.registerServerbound(0x00, ServerStatusRequestPacket);
+statusProtocol.registerServerbound(0x01, ServerStatusPingPacket);
+statusProtocol.registerClientbound(0x00, ClientStatusResponsePacket);
+statusProtocol.registerClientbound(0x01, ClientStatusPongPacket);

@@ -10,7 +10,7 @@ A Minecraft Server implementation that supports modern Minecraft versions. It is
 ### Run server
 
 ```
-deno run --allow-net src/main.ts
+deno run --unstable -A src/main.ts
 ```
 
 ### Run tests

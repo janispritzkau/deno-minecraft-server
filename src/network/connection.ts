@@ -1,7 +1,7 @@
 import * as zlib from "https://deno.land/x/compress@v0.3.8/zlib/mod.ts";
 
 import { Packet, PacketReader, PacketWriter } from "./packet.ts";
-import { Protocol } from "./protocol.ts";
+import { PacketHandler, Protocol } from "./protocol.ts";
 
 export class Connection {
   private buf: Uint8Array;
@@ -10,10 +10,10 @@ export class Connection {
   private skipRead = false;
   private compressionThreshold = -1;
   private protocol!: Protocol<any>;
-  private handler!: any;
+  private handler!: PacketHandler;
   private closed = false;
 
-  setProtocol<H>(protocol: Protocol<H>, handler: H) {
+  setProtocol<H extends PacketHandler>(protocol: Protocol<H>, handler: H) {
     this.protocol = protocol;
     this.handler = handler;
   }
@@ -32,6 +32,7 @@ export class Connection {
   close() {
     this.conn.close();
     this.closed = true;
+    this.handler.handleDisconnect();
   }
 
   async sendPacket(packet: Packet<any>) {
@@ -122,7 +123,7 @@ export class Connection {
       }
     }
 
-    this.conn.close();
+    this.close();
     return null;
   }
 }

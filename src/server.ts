@@ -1,4 +1,8 @@
 import { Connection } from "./network/connection.ts";
+import {
+  handshakeProtocol,
+  ServerHandshakeHandler,
+} from "./network/protocol/handshake.ts";
 
 export interface ServerConfig {
   hostname?: string;
@@ -33,10 +37,11 @@ export class Server {
   }
 
   private async handleConnection(conn: Connection) {
+    conn.setProtocol(handshakeProtocol, new ServerHandshakeHandler(conn));
+
     while (true) {
-      const packet = await conn.receive();
+      const packet = await conn.receivePacket();
       if (packet == null) break;
-      console.log("received packet", packet);
     }
   }
 
@@ -54,6 +59,7 @@ export class Server {
 
         this.handleConnection(new Connection(conn)).catch((e) => {
           console.error("error in connection handler", e);
+          conn.close();
         }).finally(() => {
           console.log("connection closed", `${addr.hostname}:${addr.port}`);
         });

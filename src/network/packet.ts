@@ -2,6 +2,15 @@ import { CompoundTag } from "../nbt/tag.ts";
 import { NBTReader } from "../nbt/reader.ts";
 import { NBTWriter } from "../nbt/writer.ts";
 
+export interface Packet<PacketHandler> {
+  write(writer: PacketWriter): void;
+  handle(handler: PacketHandler): Promise<void> | void;
+}
+
+export interface PacketConstructor {
+  read(reader: PacketReader): Packet<any>;
+}
+
 const textDecoder = new TextDecoder();
 
 export class PacketReader {

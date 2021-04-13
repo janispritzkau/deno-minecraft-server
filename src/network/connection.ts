@@ -1,6 +1,7 @@
 import * as zlib from "https://deno.land/x/compress@v0.3.8/zlib/mod.ts";
 
-import { PacketReader, PacketWriter } from "./packet.ts";
+import { Packet, PacketReader, PacketWriter } from "./packet.ts";
+import { Protocol } from "./protocol.ts";
 
 export class Connection {
   private buf: Uint8Array;
@@ -8,6 +9,14 @@ export class Connection {
   private bytesRead = 0;
   private skipRead = false;
   private compressionThreshold = -1;
+  private protocol!: Protocol<any>;
+  private handler!: any;
+  private closed = false;
+
+  setProtocol<H>(protocol: Protocol<H>, handler: H) {
+    this.protocol = protocol;
+    this.handler = handler;
+  }
 
   constructor(
     private conn: Deno.Writer & Deno.Reader & Deno.Closer,
@@ -22,6 +31,11 @@ export class Connection {
 
   close() {
     this.conn.close();
+    this.closed = true;
+  }
+
+  async sendPacket(packet: Packet<any>) {
+    await this.send(this.protocol.serialize(packet));
   }
 
   async send(buf: Uint8Array) {
@@ -44,7 +58,17 @@ export class Connection {
     );
   }
 
+  async receivePacket() {
+    const buf = await this.receive();
+    if (!buf) return null;
+    const packet = this.protocol.deserialize(buf);
+    await packet.handle(this.handler);
+    return packet;
+  }
+
   async receive(): Promise<Uint8Array | null> {
+    if (this.closed) return null;
+
     if (this.bytesRead) {
       this.buf.copyWithin(0, this.bytesRead, this.pos);
       this.pos -= this.bytesRead;

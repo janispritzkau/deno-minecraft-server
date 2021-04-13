@@ -9,8 +9,8 @@ export class ServerLoginHandler implements PacketHandler {
   constructor(private server: Server, private conn: Connection) {}
 
   async handleLoginStart(loginStart: ServerLoginStartPacket) {
-    // await this.conn.sendPacket(new ClientSetCompressionPacket(256));
-    // this.conn.setCompression(256);
+    await this.conn.sendPacket(new ClientSetCompressionPacket(256));
+    this.conn.setCompression(256);
 
     const uuid = new Uint8Array(
       new Md5().update(`OfflinePlayer:${loginStart.name}`).digest(),

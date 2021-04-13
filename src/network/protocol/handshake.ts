@@ -2,13 +2,18 @@ import { Packet, PacketReader, PacketWriter } from "../packet.ts";
 import { PacketHandler, Protocol } from "../protocol.ts";
 import { Server } from "../../server.ts";
 import { Connection } from "../connection.ts";
+
 import { ServerStatusHandler, statusProtocol } from "./status.ts";
-import { loginProtocol, ServerLoginHandler } from "./login.ts";
+import {
+  ClientLoginDisconnectPacket,
+  loginProtocol,
+  ServerLoginHandler,
+} from "./login.ts";
 
 export class ServerHandshakeHandler implements PacketHandler {
   constructor(private server: Server, private conn: Connection) {}
 
-  handleHandshake(handshake: ServerHandshakePacket) {
+  async handleHandshake(handshake: ServerHandshakePacket) {
     switch (handshake.nextState) {
       case 1:
         return this.conn.setProtocol(
@@ -16,10 +21,22 @@ export class ServerHandshakeHandler implements PacketHandler {
           new ServerStatusHandler(this.server, this.conn),
         );
       case 2:
-        return this.conn.setProtocol(
+        this.conn.setProtocol(
           loginProtocol,
           new ServerLoginHandler(this.server, this.conn),
         );
+        if (handshake.protocol != 754) {
+          await this.conn.sendPacket(
+            new ClientLoginDisconnectPacket({
+              translate: `multiplayer.disconnect.${
+                handshake.protocol < 754 ? "outdated_client" : "incompatible"
+              }`,
+              with: ["1.16.5"],
+            }),
+          );
+          this.conn.close();
+        }
+        return;
       default:
         throw new Error("Invalid next state");
     }
@@ -54,7 +71,7 @@ export class ServerHandshakePacket implements Packet<ServerHandshakeHandler> {
   }
 
   handle(handler: ServerHandshakeHandler) {
-    handler.handleHandshake(this);
+    return handler.handleHandshake(this);
   }
 }
 

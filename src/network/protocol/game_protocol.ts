@@ -1,65 +1,9 @@
+import { Protocol } from "../protocol.ts";
 import { Packet, PacketReader, PacketWriter } from "../packet.ts";
-import { PacketHandler, Protocol } from "../protocol.ts";
-import { Connection } from "../connection.ts";
-import { Server } from "../../server.ts";
+import { ServerGameHandler } from "./game_handler.ts";
 import { Player } from "../../server/player.ts";
 import { CompoundTag } from "../../nbt/tag.ts";
 import { ChatComponent } from "../../chat/mod.ts";
-
-export class ServerGameHandler implements PacketHandler {
-  private keepAliveTime = performance.now();
-  private keepAliveId?: bigint | null = null;
-  private keepAlivePending = false;
-  private keepAliveInterval?: number;
-
-  constructor(
-    private server: Server,
-    private conn: Connection,
-    private player: Player,
-  ) {
-    this.keepAliveInterval = setInterval(() => this.sendKeepAlive(), 15000);
-  }
-
-  sendKeepAlive() {
-    if (this.keepAlivePending) {
-      this.conn.sendPacket(
-        new ClientDisconnectPacket({ translate: "disconnect.timeout" }),
-      ).then(() => this.conn.close());
-    } else {
-      const time = performance.now();
-      this.keepAlivePending = true;
-      this.keepAliveTime = time;
-      this.keepAliveId = BigInt(~~time);
-      this.conn.sendPacket(
-        new ClientKeepAlivePacket(this.keepAliveId),
-      );
-    }
-  }
-
-  handleChatMessage(chatMessage: ServerChatMessagePacket) {
-    this.server.broadcastChat({
-      translate: "chat.type.text",
-      with: [this.player.name, chatMessage.text],
-    });
-  }
-
-  handleKeepAlive(keepAlive: ServerKeepAlivePacket) {
-    if (this.keepAlivePending && keepAlive.id == this.keepAliveId) {
-      this.keepAlivePending = false;
-      const latency = performance.now() - this.keepAliveTime;
-      this.player.latency = (this.player.latency * 3 + latency) / 4;
-    } else {
-      this.conn.sendPacket(
-        new ClientDisconnectPacket({ translate: "disconnect.timeout" }),
-      );
-    }
-  }
-
-  handleDisconnect() {
-    clearInterval(this.keepAliveInterval);
-    this.server.removePlayer(this.player);
-  }
-}
 
 export class ClientChatMessagePacket implements Packet<ServerGameHandler> {
   static read(): ClientChatMessagePacket {
@@ -102,6 +46,20 @@ export class ClientDisconnectPacket implements Packet<ServerGameHandler> {
 
   write(writer: PacketWriter) {
     writer.writeJSON(this.reason);
+  }
+
+  handle() {}
+}
+
+export class ClientChunkPacket implements Packet<ServerGameHandler> {
+  static read(): ClientChunkPacket {
+    throw new Error();
+  }
+
+  constructor(public x: number, public y: number) {}
+
+  write(writer: PacketWriter) {
+    // writer.
   }
 
   handle() {}

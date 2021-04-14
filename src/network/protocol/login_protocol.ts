@@ -1,30 +1,7 @@
+import { Protocol } from "../protocol.ts";
 import { Packet, PacketReader, PacketWriter } from "../packet.ts";
-import { PacketHandler, Protocol } from "../protocol.ts";
-import { Connection } from "../connection.ts";
-import { Server } from "../../server.ts";
+import { ServerLoginHandler } from "./login_handler.ts";
 import { ChatComponent } from "../../chat/mod.ts";
-import { Md5 } from "https://deno.land/std/hash/md5.ts";
-
-export class ServerLoginHandler implements PacketHandler {
-  constructor(private server: Server, private conn: Connection) {}
-
-  async handleLoginStart(loginStart: ServerLoginStartPacket) {
-    await this.conn.sendPacket(new ClientSetCompressionPacket(256));
-    this.conn.setCompression(256);
-
-    const uuid = new Uint8Array(
-      new Md5().update(`OfflinePlayer:${loginStart.name}`).digest(),
-    );
-
-    await this.conn.sendPacket(
-      new ClientLoginSuccessPacket(uuid, loginStart.name),
-    );
-
-    await this.server.addPlayer(this.conn, uuid, loginStart.name);
-  }
-
-  handleDisconnect() {}
-}
 
 export class ClientLoginDisconnectPacket implements Packet<ServerLoginHandler> {
   static read(reader: PacketReader) {

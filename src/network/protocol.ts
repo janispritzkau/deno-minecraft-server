@@ -5,10 +5,6 @@ import {
   PacketWriter,
 } from "./packet.ts";
 
-export interface PacketHandler {
-  handleDisconnect(): void;
-}
-
 export class UnregisteredPacket implements Packet<void> {
   constructor(public id: number, public buf: Uint8Array) {}
   write() {}

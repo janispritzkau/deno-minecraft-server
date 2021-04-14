@@ -1,14 +1,14 @@
-import { Packet, PacketReader, PacketWriter } from "../packet.ts";
-import { PacketHandler, Protocol } from "../protocol.ts";
-import { Server } from "../../server.ts";
+import { PacketHandler } from "../packet_handler.ts";
 import { Connection } from "../connection.ts";
-
-import { ServerStatusHandler, statusProtocol } from "./status.ts";
+import { Server } from "../../server.ts";
+import { ServerHandshakePacket } from "./handshake_protocol.ts";
+import { statusProtocol } from "./status_protocol.ts";
+import { ServerStatusHandler } from "./status_handler.ts";
 import {
   ClientLoginDisconnectPacket,
   loginProtocol,
-  ServerLoginHandler,
-} from "./login.ts";
+} from "./login_protocol.ts";
+import { ServerLoginHandler } from "./login_handler.ts";
 
 export class ServerHandshakeHandler implements PacketHandler {
   constructor(private server: Server, private conn: Connection) {}
@@ -44,36 +44,3 @@ export class ServerHandshakeHandler implements PacketHandler {
 
   handleDisconnect() {}
 }
-
-export class ServerHandshakePacket implements Packet<ServerHandshakeHandler> {
-  static read(reader: PacketReader) {
-    return new this(
-      reader.readVarInt(),
-      reader.readString(),
-      reader.readUnsignedShort(),
-      reader.readVarInt(),
-    );
-  }
-
-  constructor(
-    public protocol: number,
-    public hostname: string,
-    public port: number,
-    public nextState: number,
-  ) {}
-
-  write(writer: PacketWriter) {
-    writer
-      .writeVarInt(this.protocol)
-      .writeString(this.hostname)
-      .writeUnsignedShort(this.port)
-      .writeVarInt(this.nextState);
-  }
-
-  handle(handler: ServerHandshakeHandler) {
-    return handler.handleHandshake(this);
-  }
-}
-
-export const handshakeProtocol = new Protocol<ServerHandshakeHandler>();
-handshakeProtocol.registerServerbound(0x00, ServerHandshakePacket);

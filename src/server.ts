@@ -3,11 +3,10 @@ import { CompoundTag, decodeCompoundTag } from "./nbt/mod.ts";
 import { ChatComponent } from "./chat/mod.ts";
 import { Player } from "./server/player.ts";
 
-import {
-  handshakeProtocol,
-  ServerHandshakeHandler,
-} from "./network/protocol/handshake.ts";
+import { ServerHandshakeHandler } from "./network/protocol/handshake_handler.ts";
+import { handshakeProtocol } from "./network/protocol/handshake_protocol.ts";
 
+import { ServerGameHandler } from "./network/protocol/game_handler.ts";
 import {
   ClientChatMessagePacket,
   ClientDisconnectPacket,
@@ -15,8 +14,7 @@ import {
   ClientPlayerInfoPacket,
   ClientPlayerPositionAndLookPacket,
   gameProtocol,
-  ServerGameHandler,
-} from "./network/protocol/game.ts";
+} from "./network/protocol/game_protocol.ts";
 
 export interface ServerConfig {
   hostname?: string;
@@ -29,7 +27,7 @@ export const defaultServerConfig: Required<ServerConfig> = {
 };
 
 const dimensionCodec = decodeCompoundTag(
-  Deno.readFileSync("dimension-codec.nbt"),
+  Deno.readFileSync(new URL("../dimension-codec.nbt", import.meta.url)),
 )!;
 
 const dimension = new CompoundTag()
@@ -105,7 +103,13 @@ export class Server {
           translate: "multiplayer.disconnect.duplicate_login",
         }),
       );
+      return conn.close();
     }
+
+    this.broadcastChat({
+      translate: "multiplayer.player.joined",
+      with: [player.name],
+    });
 
     this.players.set(name, player);
 
@@ -133,11 +137,6 @@ export class Server {
     await conn.sendPacket(
       new ClientPlayerInfoPacket("add_player", [...this.players.values()]),
     );
-
-    this.broadcastChat({
-      translate: "multiplayer.player.joined",
-      with: [player.name],
-    });
   }
 
   async removePlayer(player: Player) {

@@ -1,31 +1,7 @@
+import { Protocol } from "../protocol.ts";
 import { Packet, PacketReader, PacketWriter } from "../packet.ts";
-import { PacketHandler, Protocol } from "../protocol.ts";
-import { Connection } from "../connection.ts";
-import { Server } from "../../server.ts";
+import { ServerStatusHandler } from "./status_handler.ts";
 import { ServerStatus } from "../../server/status.ts";
-
-export class ServerStatusHandler implements PacketHandler {
-  constructor(private server: Server, private conn: Connection) {}
-
-  handleRequest() {
-    this.conn.sendPacket(
-      new ClientStatusResponsePacket({
-        description: "A Minecraft Server",
-        version: {
-          name: "1.16.5",
-          protocol: 754,
-        },
-        players: { online: this.server.players.size, max: 0 },
-      }),
-    );
-  }
-
-  handlePing(ping: ServerStatusPingPacket) {
-    this.conn.sendPacket(new ClientStatusPongPacket(ping.id));
-  }
-
-  handleDisconnect() {}
-}
 
 export class ClientStatusResponsePacket implements Packet<ServerStatusHandler> {
   static read(reader: PacketReader) {

@@ -282,6 +282,14 @@ export class CompoundTag implements Tag {
     return this.getType(key, StringTag).valueOf();
   }
 
+  getList(key: string) {
+    return this.getType(key, ListTag).valueOf();
+  }
+
+  getCompound(key: string) {
+    return this.getType(key, CompoundTag);
+  }
+
   getIntArray(key: string) {
     return this.getType(key, IntArrayTag).valueOf();
   }

@@ -7,7 +7,6 @@ import {
 
 export class UnregisteredPacket implements Packet<unknown> {
   constructor(public id: number, public buf: Uint8Array) {}
-  write() {}
   handle() {}
 }
 
@@ -56,6 +55,10 @@ class PacketSet<PacketHandler> {
   }
 
   serialize(packet: Packet<PacketHandler>): Uint8Array {
+    if (!packet.write) {
+      throw new Error(`${packet.constructor.name} has no write method`);
+    }
+
     const id = this.constructorToId.get(
       packet.constructor as unknown as PacketConstructor<PacketHandler>,
     );
@@ -82,6 +85,10 @@ class PacketSet<PacketHandler> {
     if (!constructor) {
       if (ignoreUnregistered) return new UnregisteredPacket(id, buf);
       throw new Error(`No packet with id ${id} registered`);
+    }
+
+    if (!constructor.read) {
+      throw new Error(`${constructor.name} has no read method`);
     }
 
     const packet = constructor.read(reader);

@@ -47,8 +47,6 @@ export class ClientStatusResponsePacket implements Packet<void> {
   write(writer: PacketWriter) {
     writer.writeJSON(this.status);
   }
-
-  handle() {}
 }
 
 export class ClientStatusPongPacket implements Packet<void> {
@@ -61,8 +59,6 @@ export class ClientStatusPongPacket implements Packet<void> {
   write(writer: PacketWriter) {
     writer.writeLong(this.id);
   }
-
-  handle() {}
 }
 
 export const statusProtocol = new Protocol<ServerHandler, void>();

@@ -3,13 +3,13 @@ import { NBTReader } from "../nbt/reader.ts";
 import { NBTWriter } from "../nbt/writer.ts";
 
 export interface Packet<PacketHandler> {
-  write(writer: PacketWriter): void;
-  handle(handler: PacketHandler): Promise<void> | void;
+  write?(writer: PacketWriter): void;
+  handle?(handler: PacketHandler): Promise<void> | void;
 }
 
 export interface PacketConstructor<PacketHandler> {
   name: string;
-  read(reader: PacketReader): Packet<PacketHandler>;
+  read?(reader: PacketReader): Packet<PacketHandler>;
 }
 
 const textDecoder = new TextDecoder();

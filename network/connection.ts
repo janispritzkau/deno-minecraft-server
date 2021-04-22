@@ -57,7 +57,7 @@ export class Connection {
     const packet = this.isServer
       ? this.protocol.deserializeServerbound(buf)
       : this.protocol.deserializeClientbound(buf);
-    if (this.handler) await packet.handle(this.handler);
+    if (this.handler) await packet.handle?.(this.handler);
     return packet;
   }
 

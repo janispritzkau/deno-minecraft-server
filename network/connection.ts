@@ -117,7 +117,7 @@ export class Connection {
         let packetBuf: Uint8Array;
         if (this.compressionThreshold != -1) {
           const uncompressedSize = reader.readVarInt();
-          packetBuf = this.buf.subarray(packetStart, packetEnd);
+          packetBuf = this.buf.subarray(reader.bytesRead(), packetEnd);
           if (uncompressedSize != 0) {
             packetBuf = zlib.inflate(packetBuf);
           }

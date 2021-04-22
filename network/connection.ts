@@ -1,6 +1,7 @@
 import * as zlib from "https://deno.land/x/compress/zlib/mod.ts";
 import { Packet, PacketReader, PacketWriter } from "./packet.ts";
 import { Protocol } from "./protocol.ts";
+import { PacketHandler } from "./packet_handler.ts";
 
 export class Connection {
   readonly conn: Deno.Conn;
@@ -13,7 +14,7 @@ export class Connection {
 
   private isServer = false;
   private protocol: Protocol<unknown, unknown> | null = null;
-  private handler: unknown | null = null;
+  private handler: PacketHandler | null = null;
 
   private compressionThreshold = -1;
 
@@ -22,13 +23,19 @@ export class Connection {
     this.buf = new Uint8Array(256);
   }
 
-  setServerProtocol<H>(protocol: Protocol<H, unknown>, handler: H) {
+  setServerProtocol<H>(
+    protocol: Protocol<H, unknown>,
+    handler: H & PacketHandler | null,
+  ) {
     this.isServer = true;
     this.protocol = protocol;
     this.handler = handler;
   }
 
-  setClientProtocol<H>(protocol: Protocol<unknown, H>, handler: H) {
+  setClientProtocol<H>(
+    protocol: Protocol<unknown, H>,
+    handler: H & PacketHandler | null,
+  ) {
     this.isServer = false;
     this.protocol = protocol;
     this.handler = handler;
@@ -133,6 +140,7 @@ export class Connection {
   close() {
     if (this.closed) return;
     this.conn.close();
+    this.handler?.onDisconnect?.();
     this.closed = true;
   }
 

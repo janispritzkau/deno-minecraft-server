@@ -1,7 +1,8 @@
 import { Protocol } from "../protocol.ts";
+import { PacketHandler } from "../packet_handler.ts";
 import { Packet, PacketReader, PacketWriter } from "../packet.ts";
 
-export interface ServerStatusPacketHandler {
+export interface ServerStatusPacketHandler extends PacketHandler {
   handleRequest(packet: ServerStatusRequestPacket): Promise<void>;
   handlePing(packet: ServerStatusPingPacket): Promise<void>;
 }

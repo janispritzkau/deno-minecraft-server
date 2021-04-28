@@ -17,6 +17,7 @@ export class Connection {
   private handler: PacketHandler | null = null;
 
   private compressionThreshold = -1;
+  private ignoreUnregistered = false;
 
   constructor(conn: Deno.Conn) {
     this.conn = conn;
@@ -55,8 +56,8 @@ export class Connection {
     if (!buf) return null;
     if (!this.protocol) throw new Error("No protocol set");
     const packet = this.isServer
-      ? this.protocol.deserializeServerbound(buf)
-      : this.protocol.deserializeClientbound(buf);
+      ? this.protocol.deserializeServerbound(buf, this.ignoreUnregistered)
+      : this.protocol.deserializeClientbound(buf, this.ignoreUnregistered);
     if (this.handler) await packet.handle?.(this.handler);
     return packet;
   }
@@ -152,5 +153,9 @@ export class Connection {
 
   setCompression(threshold: number) {
     this.compressionThreshold = threshold;
+  }
+
+  setIgnoreUnregistered(ignoreUnregistered: boolean) {
+    this.ignoreUnregistered = ignoreUnregistered;
   }
 }
